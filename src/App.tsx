@@ -37,7 +37,7 @@ const terrainOptions: Array<{ id: TerrainTemplate; icon: string; hint: string }>
 ];
 
 const kindOptions: EntityKind[] = ["animal", "plant", "resource", "oddity", "human"];
-const MAX_DRAWN_ENTITIES = 100;
+const MAX_DRAWN_ENTITIES = 60;
 
 export function App() {
   const [template, setTemplate] = useState<TerrainTemplate>("island");

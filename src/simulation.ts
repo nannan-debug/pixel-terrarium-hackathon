@@ -97,9 +97,10 @@ type AddEntityInput = {
 
 const WIDTH = 100;
 const HEIGHT = 44;
-const MAX_LIVING = 90;
-const MAX_TOTAL_ENTITIES = 220;
-const MAX_SPECIES = 42;
+const INITIAL_SUBJECTS = 20;
+const MAX_LIVING = 50;
+const MAX_TOTAL_ENTITIES = 120;
+const MAX_SPECIES = 26;
 const MILESTONES = [10, 50, 100] as const;
 const PALETTE = ["#e75f3f", "#f6b54b", "#69b578", "#5fa8d3", "#d98abf", "#9a7bd1", "#e8df7a"];
 const NAMES = ["苔光", "岚牙", "灰步", "露尾", "木心", "砂眼", "澈鳞", "赤枝", "慢壳", "星鼻"];
@@ -160,12 +161,44 @@ const starterSpecies: Omit<Species, "id" | "alive">[] = [
     traits: { speed: 0.04, lifespan: 9, fertility: 0.88, cold: 0.28, aggression: 0.01, size: 0.18 },
   },
   {
+    name: "小麦田",
+    kind: "plant",
+    diet: "sun",
+    color: "#d9b85d",
+    generation: 1,
+    traits: { speed: 0.02, lifespan: 12, fertility: 0.62, cold: 0.42, aggression: 0.01, size: 0.22 },
+  },
+  {
+    name: "玉米苗",
+    kind: "plant",
+    diet: "sun",
+    color: "#a8c957",
+    generation: 1,
+    traits: { speed: 0.02, lifespan: 16, fertility: 0.58, cold: 0.5, aggression: 0.01, size: 0.24 },
+  },
+  {
+    name: "薯片袋",
+    kind: "resource",
+    diet: "none",
+    color: "#f6b54b",
+    generation: 1,
+    traits: { speed: 0, lifespan: 28, fertility: 0, cold: 0.38, aggression: 0, size: 0.32 },
+  },
+  {
     name: "淡水泉",
     kind: "resource",
     diet: "none",
     color: "#8bd8ff",
     generation: 1,
     traits: { speed: 0, lifespan: 120, fertility: 0, cold: 0.9, aggression: 0, size: 0.4 },
+  },
+  {
+    name: "气泡饮料",
+    kind: "resource",
+    diet: "none",
+    color: "#d98abf",
+    generation: 1,
+    traits: { speed: 0, lifespan: 24, fertility: 0, cold: 0.35, aggression: 0, size: 0.3 },
   },
 ];
 
@@ -199,12 +232,16 @@ export function createWorld(template: TerrainTemplate): World {
   };
 
   const plan: Array<[number, Species]> = [
-    [3, species[0]],
-    [4, species[1]],
-    [3, species[2]],
-    [5, species[3]],
-    [3, species[4]],
-    [2, species[5]],
+    [2, species[0]],
+    [3, species[1]],
+    [2, species[2]],
+    [2, species[3]],
+    [2, species[4]],
+    [3, species[5]],
+    [2, species[6]],
+    [2, species[7]],
+    [1, species[8]],
+    [1, species[9]],
   ];
 
   plan.forEach(([count, item]) => {
@@ -214,7 +251,7 @@ export function createWorld(template: TerrainTemplate): World {
   });
 
   recountSpecies(world);
-  addWorldEvent(world, "arrival", `${templateLabels[template]}生态箱苏醒，20个生命与资源开始争夺空间。`);
+  addWorldEvent(world, "arrival", `${templateLabels[template]}生态盘苏醒，${INITIAL_SUBJECTS} 个主体开始互动。`);
   return world;
 }
 
@@ -321,7 +358,7 @@ function tickEntity(world: World, entity: Entity) {
 
   const livingCount = livingEntities(world).length;
   const densityPressure = clamp(1 - livingCount / MAX_LIVING, 0, 1);
-  if (entity.energy > 72 && livingCount < MAX_LIVING && Math.random() < species.traits.fertility * 0.2 * densityPressure) {
+  if (entity.energy > 76 && livingCount < MAX_LIVING && Math.random() < species.traits.fertility * 0.14 * densityPressure) {
     breed(world, entity, species);
   }
 
@@ -460,10 +497,10 @@ function maybeRegrow(world: World) {
   const resourceSpecies = world.species.filter((species) => species.kind === "resource");
   const plantCount = world.entities.filter((entity) => entity.alive && entity.kind === "plant").length;
   const resourceCount = world.entities.filter((entity) => entity.alive && entity.kind === "resource").length;
-  if (plantSpecies.length && plantCount < 42 && Math.random() < world.climate.fertility * 0.34 * pressure) {
+  if (plantSpecies.length && plantCount < 24 && Math.random() < world.climate.fertility * 0.18 * pressure) {
     world.entities.push(createEntity(world, pick(plantSpecies), []));
   }
-  if (resourceSpecies.length && resourceCount < 16 && livingEntities(world).length < MAX_LIVING && Math.random() < world.climate.water * 0.12 * pressure) {
+  if (resourceSpecies.length && resourceCount < 8 && livingEntities(world).length < MAX_LIVING && Math.random() < world.climate.water * 0.06 * pressure) {
     world.entities.push(createEntity(world, pick(resourceSpecies), []));
   }
 }
@@ -484,7 +521,7 @@ function enforceCarryingCapacity(world: World) {
       world.entities
         .filter((entity) => !entity.alive)
         .sort((a, b) => b.biography.length - a.biography.length || b.age - a.age)
-        .slice(70 + overflow)
+        .slice(38 + overflow)
         .map((entity) => entity.id),
     );
     world.entities = world.entities.filter((entity) => entity.alive || !removableDeadIds.has(entity.id));
@@ -517,7 +554,7 @@ function achievementsFor(world: World) {
   if (world.species.some((species) => species.alive === 0 && species.generation > 1)) achievements.push("变种灭绝档案");
   if (world.entities.some((entity) => !entity.alive && entity.biography.length > 3)) achievements.push("完整生命传记");
   if (world.year >= 100) achievements.push("百年生态观察员");
-  if (livingEntities(world).length >= 40) achievements.push("繁盛生态箱");
+  if (livingEntities(world).length >= 30) achievements.push("繁盛生态箱");
   if (livingEntities(world).length <= 8) achievements.push("脆弱平衡");
   return achievements;
 }
