@@ -127,7 +127,7 @@ export function App() {
         <div className="terrarium-frame">
           <TerrariumCanvas world={world} selectedId={selected?.id} onSelect={setSelectedId} />
           <div className="glass-label">
-            <span>{templateLabels[world.template]}</span>
+            <span>俯视生态地图 · {templateLabels[world.template]}</span>
             <span>{living.length} 个存活个体</span>
           </div>
         </div>
@@ -379,15 +379,9 @@ function drawTerrarium(
   const scaleX = width / 100;
   const scaleY = height / 44;
 
-  const sky = ctx.createLinearGradient(0, 0, 0, height * 0.55);
-  sky.addColorStop(0, "#98d5e7");
-  sky.addColorStop(1, "#e7dfaa");
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, width, height);
-
-  drawSun(ctx, width, height, world.year);
-  drawTerrain(ctx, width, height, world.template);
+  drawTopDownTerrain(ctx, width, height, world);
   drawWeatherTint(ctx, width, height, world);
+  drawMapAnnotations(ctx, width, height, world);
 
   world.entities
     .filter((entity) => entity.alive)
@@ -396,7 +390,7 @@ function drawTerrarium(
       if (!species) return;
       const x = entity.x * scaleX;
       const y = entity.y * scaleY;
-      const size = Math.max(8, species.traits.size * 22);
+      const size = Math.max(7, species.traits.size * 15);
 
       if (entity.icon) {
         let image = iconCache.get(entity.icon);
@@ -413,70 +407,99 @@ function drawTerrarium(
 
       if (entity.id === selectedId) {
         ctx.strokeStyle = "#fff2a6";
-        ctx.lineWidth = 4;
-        ctx.strokeRect(x - size - 5, y - size - 5, size * 2 + 10, size * 2 + 10);
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x - size - 4, y - size - 4, size * 2 + 8, size * 2 + 8);
       }
     });
 
-  ctx.fillStyle = "rgba(255,255,255,0.16)";
-  for (let x = 0; x < width; x += 18) ctx.fillRect(x, 0, 1, height);
-  for (let y = 0; y < height; y += 18) ctx.fillRect(0, y, width, 1);
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  for (let x = 0; x < width; x += 59) ctx.fillRect(x, 0, 1, height);
+  for (let y = 0; y < height; y += 59) ctx.fillRect(0, y, width, 1);
 }
 
-function drawSun(ctx: CanvasRenderingContext2D, width: number, height: number, year: number) {
-  const x = width * (0.12 + ((year % 20) / 20) * 0.72);
-  const y = height * 0.16;
-  ctx.fillStyle = "#fff1a8";
-  ctx.fillRect(x - 20, y - 20, 40, 40);
-  ctx.fillStyle = "rgba(255, 241, 168, 0.28)";
-  ctx.fillRect(x - 36, y - 6, 72, 12);
-  ctx.fillRect(x - 6, y - 36, 12, 72);
+function drawTopDownTerrain(ctx: CanvasRenderingContext2D, width: number, height: number, world: World) {
+  const cell = 10;
+  const cellW = width / cell;
+  const cellH = height / cell;
+  for (let gy = 0; gy < cell; gy += 1) {
+    for (let gx = 0; gx < cell; gx += 1) {
+      ctx.fillStyle = terrainColor(world.template, gx, gy, world.year);
+      ctx.fillRect(gx * cellW, gy * cellH, cellW + 1, cellH + 1);
+    }
+  }
+
+  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  for (let gy = 0; gy < cell; gy += 1) {
+    for (let gx = 0; gx < cell; gx += 1) {
+      if ((gx + gy + world.year) % 5 === 0) ctx.fillRect(gx * cellW + cellW * 0.18, gy * cellH + cellH * 0.44, cellW * 0.42, 3);
+    }
+  }
 }
 
-function drawTerrain(ctx: CanvasRenderingContext2D, width: number, height: number, template: TerrainTemplate) {
-  const waterLine = template === "ocean" ? 0.5 : template === "island" ? 0.74 : 0.88;
-  ctx.fillStyle = template === "ocean" ? "#397ca6" : "#5aa1bf";
-  ctx.fillRect(0, height * waterLine, width, height * (1 - waterLine));
-
-  ctx.fillStyle = "#855f3d";
-  ctx.fillRect(0, height * 0.81, width, height * 0.19);
-  ctx.fillStyle = "#4f8f4b";
+function terrainColor(template: TerrainTemplate, gx: number, gy: number, year: number) {
+  const n = terrainNoise(gx, gy, year);
+  const dx = gx - 4.5;
+  const dy = gy - 4.5;
+  const distance = Math.hypot(dx, dy);
 
   if (template === "island") {
-    pixelHill(ctx, width * 0.18, height * 0.72, width * 0.64, height * 0.14, "#6fa34d");
-  } else if (template === "mountain") {
-    pixelMountain(ctx, width * 0.06, height * 0.82, width * 0.32, height * 0.5);
-    pixelMountain(ctx, width * 0.34, height * 0.82, width * 0.4, height * 0.62);
-    pixelMountain(ctx, width * 0.68, height * 0.82, width * 0.28, height * 0.44);
-  } else if (template === "ocean") {
-    pixelHill(ctx, width * 0.52, height * 0.58, width * 0.18, height * 0.08, "#71a05a");
-    pixelHill(ctx, width * 0.12, height * 0.62, width * 0.16, height * 0.06, "#8ebf65");
-  } else {
-    pixelHill(ctx, 0, height * 0.7, width, height * 0.16, "#79a957");
+    if (distance > 4.25 + n * 0.35) return n > 0.55 ? "#286989" : "#347fa5";
+    if (distance > 3.5 + n * 0.2) return "#d8bd72";
+    if (distance < 1.05 && n > 0.35) return "#78836d";
+    return n > 0.58 ? "#5f963f" : "#4f833c";
   }
+  if (template === "ocean") {
+    if ((gx === 2 && gy === 6) || (gx === 7 && gy === 3) || (gx === 5 && gy === 7)) return "#79a957";
+    if ((gx === 2 && gy === 5) || (gx === 6 && gy === 3)) return "#d8bd72";
+    return n > 0.5 ? "#266b90" : "#2f83ac";
+  }
+  if (template === "mountain") {
+    if (Math.abs(gx - gy) < 2 || Math.abs(gx + gy - 10) < 1.5) return n > 0.48 ? "#8c9588" : "#677261";
+    if (gy > 6 && gx < 3) return "#2f7797";
+    return n > 0.52 ? "#4f833c" : "#3d6b38";
+  }
+  if (gy > 7 && gx < 3) return "#337fa3";
+  if (Math.abs(gy - 5) < 1 && gx > 4) return "#7cad52";
+  if (n > 0.72) return "#9b7c48";
+  return n > 0.52 ? "#5b9644" : "#477c39";
+}
 
-  ctx.fillStyle = "rgba(255,255,255,0.35)";
-  for (let x = 0; x < width; x += 56) {
-    ctx.fillRect(x, height * waterLine + ((x / 56) % 2) * 8, 28, 4);
+function terrainNoise(gx: number, gy: number, year: number) {
+  const value = Math.sin(gx * 12.9898 + gy * 78.233 + Math.floor(year / 8) * 4.17) * 43758.5453;
+  return value - Math.floor(value);
+}
+
+function drawMapAnnotations(ctx: CanvasRenderingContext2D, width: number, height: number, world: World) {
+  if (world.template === "mountain") {
+    drawTopDownPeak(ctx, width * 0.22, height * 0.26);
+    drawTopDownPeak(ctx, width * 0.5, height * 0.48);
+    drawTopDownPeak(ctx, width * 0.74, height * 0.28);
+  }
+  if (world.template === "land" || world.template === "island") {
+    ctx.fillStyle = "rgba(70, 132, 80, 0.58)";
+    for (let index = 0; index < 18; index += 1) {
+      const x = ((index * 137) % 930) / 1000;
+      const y = ((index * 251) % 760) / 1000;
+      ctx.fillRect(width * (0.08 + x * 0.84), height * (0.12 + y * 0.76), 8, 8);
+    }
+  }
+  if (world.template === "ocean" || world.template === "island") {
+    ctx.fillStyle = "rgba(210, 238, 245, 0.35)";
+    for (let index = 0; index < 16; index += 1) {
+      const x = width * (((index * 73) % 100) / 100);
+      const y = height * (((index * 47) % 100) / 100);
+      ctx.fillRect(x, y, 28, 4);
+    }
   }
 }
 
-function pixelHill(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string) {
-  ctx.fillStyle = color;
-  for (let step = 0; step < 12; step += 1) {
-    const inset = (step / 12) * w * 0.22;
-    ctx.fillRect(x + inset, y + step * (h / 12), w - inset * 2, h / 7);
-  }
-}
-
-function pixelMountain(ctx: CanvasRenderingContext2D, x: number, baseY: number, w: number, h: number) {
-  ctx.fillStyle = "#6f7770";
-  for (let step = 0; step < 14; step += 1) {
-    const rowW = w * (1 - step / 15);
-    ctx.fillRect(x + (w - rowW) / 2, baseY - step * (h / 14), rowW, h / 12);
-  }
-  ctx.fillStyle = "#e4ece8";
-  ctx.fillRect(x + w * 0.42, baseY - h * 0.92, w * 0.16, h * 0.18);
+function drawTopDownPeak(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.fillStyle = "#515b52";
+  ctx.fillRect(x - 30, y - 18, 60, 36);
+  ctx.fillStyle = "#7d887c";
+  ctx.fillRect(x - 18, y - 30, 36, 60);
+  ctx.fillStyle = "#dce3d7";
+  ctx.fillRect(x - 8, y - 8, 16, 16);
 }
 
 function drawWeatherTint(ctx: CanvasRenderingContext2D, width: number, height: number, world: World) {
@@ -493,19 +516,20 @@ function drawWeatherTint(ctx: CanvasRenderingContext2D, width: number, height: n
 function drawEntity(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string, kind: EntityKind) {
   ctx.fillStyle = color;
   if (kind === "plant") {
-    ctx.fillRect(x - size * 0.25, y - size, size * 0.5, size);
-    ctx.fillRect(x - size * 0.75, y - size * 0.75, size * 1.5, size * 0.35);
+    ctx.fillRect(x - size * 0.55, y - size * 0.55, size * 1.1, size * 1.1);
+    ctx.fillStyle = "rgba(255,255,255,0.28)";
+    ctx.fillRect(x - size * 0.2, y - size * 0.2, size * 0.4, size * 0.4);
     return;
   }
   if (kind === "resource") {
-    ctx.fillRect(x - size * 0.8, y - size * 0.35, size * 1.6, size * 0.7);
+    ctx.fillRect(x - size * 0.75, y - size * 0.75, size * 1.5, size * 1.5);
     ctx.fillStyle = "rgba(255,255,255,0.45)";
-    ctx.fillRect(x - size * 0.45, y - size * 0.15, size * 0.9, size * 0.2);
+    ctx.fillRect(x - size * 0.35, y - size * 0.35, size * 0.7, size * 0.25);
     return;
   }
-  ctx.fillRect(x - size * 0.5, y - size * 0.65, size, size * 0.9);
-  ctx.fillRect(x - size * 0.35, y - size * 1.1, size * 0.7, size * 0.45);
+  ctx.fillRect(x - size * 0.55, y - size * 0.45, size * 1.1, size * 0.9);
+  ctx.fillRect(x - size * 0.25, y - size * 0.75, size * 0.5, size * 0.35);
   ctx.fillStyle = "#1b1b1b";
-  ctx.fillRect(x - size * 0.22, y - size * 0.95, size * 0.12, size * 0.1);
-  ctx.fillRect(x + size * 0.12, y - size * 0.95, size * 0.12, size * 0.1);
+  ctx.fillRect(x - size * 0.28, y - size * 0.1, size * 0.16, size * 0.16);
+  ctx.fillRect(x + size * 0.12, y - size * 0.1, size * 0.16, size * 0.16);
 }

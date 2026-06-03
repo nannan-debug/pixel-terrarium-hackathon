@@ -120,10 +120,13 @@ h2 {
 .terrarium-frame {
   position: relative;
   min-height: 360px;
-  border: 1px solid rgba(244, 239, 216, 0.28);
-  background: #1b251e;
+  border: 1px solid rgba(244, 239, 216, 0.34);
+  background:
+    linear-gradient(135deg, rgba(240, 189, 90, 0.12), transparent 28%),
+    #1b251e;
   box-shadow:
-    inset 0 0 0 10px rgba(255, 255, 255, 0.06),
+    inset 0 0 0 10px rgba(16, 23, 19, 0.52),
+    inset 0 0 0 12px rgba(244, 239, 216, 0.12),
     0 26px 70px rgba(0, 0, 0, 0.36);
 }
 
@@ -145,7 +148,7 @@ h2 {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  color: #172118;
+  color: #111813;
   font-size: 13px;
   font-weight: 800;
   pointer-events: none;
@@ -153,7 +156,9 @@ h2 {
 
 .glass-label span {
   padding: 6px 10px;
-  background: rgba(244, 239, 216, 0.78);
+  border: 1px solid rgba(17, 24, 19, 0.2);
+  background: rgba(244, 239, 216, 0.84);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
 }
 
 .controls-row,
