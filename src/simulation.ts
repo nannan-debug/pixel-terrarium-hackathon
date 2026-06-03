@@ -97,6 +97,9 @@ type AddEntityInput = {
 
 const WIDTH = 100;
 const HEIGHT = 44;
+const MAX_LIVING = 90;
+const MAX_TOTAL_ENTITIES = 220;
+const MAX_SPECIES = 42;
 const MILESTONES = [10, 50, 100] as const;
 const PALETTE = ["#e75f3f", "#f6b54b", "#69b578", "#5fa8d3", "#d98abf", "#9a7bd1", "#e8df7a"];
 const NAMES = ["苔光", "岚牙", "灰步", "露尾", "木心", "砂眼", "澈鳞", "赤枝", "慢壳", "星鼻"];
@@ -258,6 +261,8 @@ export function advanceWorld(world: World, years = 1): World {
     copy.entities.filter((entity) => entity.alive).forEach((entity) => tickEntity(copy, entity));
     maybeRegrow(copy);
     recountSpecies(copy);
+    enforceCarryingCapacity(copy);
+    recountSpecies(copy);
     maybeReport(copy);
   }
   return copy;
@@ -314,7 +319,9 @@ function tickEntity(world: World, entity: Entity) {
   const climateStress = Math.abs(world.climate.temperature - species.traits.cold) * 7;
   entity.energy -= climateStress;
 
-  if (entity.energy > 72 && Math.random() < species.traits.fertility * 0.32) {
+  const livingCount = livingEntities(world).length;
+  const densityPressure = clamp(1 - livingCount / MAX_LIVING, 0, 1);
+  if (entity.energy > 72 && livingCount < MAX_LIVING && Math.random() < species.traits.fertility * 0.2 * densityPressure) {
     breed(world, entity, species);
   }
 
@@ -352,16 +359,24 @@ function feed(world: World, entity: Entity, species: Species) {
 }
 
 function nearestFood(world: World, entity: Entity, diet: Diet) {
-  const candidates = world.entities.filter((candidate) => {
-    if (!candidate.alive || candidate.id === entity.id) return false;
-    if (candidate.kind === "resource") return true;
-    if (diet === "plant") return candidate.kind === "plant";
-    if (diet === "meat") return candidate.kind === "animal" || candidate.kind === "human";
-    if (diet === "mixed") return candidate.kind === "plant";
-    return false;
-  });
+  let nearest: Entity | undefined;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  for (const candidate of world.entities) {
+    if (!candidate.alive || candidate.id === entity.id) continue;
+    const edible =
+      candidate.kind === "resource" ||
+      (diet === "plant" && candidate.kind === "plant") ||
+      (diet === "meat" && (candidate.kind === "animal" || candidate.kind === "human")) ||
+      (diet === "mixed" && candidate.kind === "plant");
+    if (!edible) continue;
+    const distance = Math.hypot(candidate.x - entity.x, candidate.y - entity.y);
+    if (distance < nearestDistance) {
+      nearest = candidate;
+      nearestDistance = distance;
+    }
+  }
 
-  return candidates.sort((a, b) => Math.hypot(a.x - entity.x, a.y - entity.y) - Math.hypot(b.x - entity.x, b.y - entity.y))[0];
+  return nearest;
 }
 
 function breed(world: World, parent: Entity, species: Species) {
@@ -387,6 +402,7 @@ function breed(world: World, parent: Entity, species: Species) {
 }
 
 function mutateSpecies(world: World, species: Species) {
+  if (world.species.length >= MAX_SPECIES) return species;
   const traitName = pick(Object.keys(species.traits) as Array<keyof TraitSet>);
   const traits = { ...species.traits };
   traits[traitName] = clamp(traits[traitName] + rnd(-0.16, 0.22), traitName === "lifespan" ? 6 : 0, traitName === "lifespan" ? 90 : 1);
@@ -437,13 +453,41 @@ function maybeWorldEvent(world: World) {
 }
 
 function maybeRegrow(world: World) {
+  const livingCount = livingEntities(world).length;
+  if (livingCount >= MAX_LIVING) return;
+  const pressure = clamp(1 - livingCount / MAX_LIVING, 0.12, 1);
   const plantSpecies = world.species.filter((species) => species.kind === "plant" && species.alive > 0);
   const resourceSpecies = world.species.filter((species) => species.kind === "resource");
-  if (plantSpecies.length && Math.random() < world.climate.fertility * 0.65) {
+  const plantCount = world.entities.filter((entity) => entity.alive && entity.kind === "plant").length;
+  const resourceCount = world.entities.filter((entity) => entity.alive && entity.kind === "resource").length;
+  if (plantSpecies.length && plantCount < 42 && Math.random() < world.climate.fertility * 0.34 * pressure) {
     world.entities.push(createEntity(world, pick(plantSpecies), []));
   }
-  if (resourceSpecies.length && Math.random() < world.climate.water * 0.22) {
+  if (resourceSpecies.length && resourceCount < 16 && livingEntities(world).length < MAX_LIVING && Math.random() < world.climate.water * 0.12 * pressure) {
     world.entities.push(createEntity(world, pick(resourceSpecies), []));
+  }
+}
+
+function enforceCarryingCapacity(world: World) {
+  const living = livingEntities(world);
+  if (living.length > MAX_LIVING) {
+    const excess = [...living]
+      .sort((a, b) => a.energy - b.energy || b.age - a.age)
+      .slice(0, living.length - MAX_LIVING);
+    excess.forEach((entity) => kill(world, entity, "生态箱承载力不足"));
+    addWorldEvent(world, "weather", `生态承载力触顶，${excess.length} 个低能量个体退出竞争。`);
+  }
+
+  const overflow = world.entities.length - MAX_TOTAL_ENTITIES;
+  if (overflow > 0) {
+    const removableDeadIds = new Set(
+      world.entities
+        .filter((entity) => !entity.alive)
+        .sort((a, b) => b.biography.length - a.biography.length || b.age - a.age)
+        .slice(70 + overflow)
+        .map((entity) => entity.id),
+    );
+    world.entities = world.entities.filter((entity) => entity.alive || !removableDeadIds.has(entity.id));
   }
 }
 

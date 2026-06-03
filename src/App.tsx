@@ -37,6 +37,7 @@ const terrainOptions: Array<{ id: TerrainTemplate; icon: string; hint: string }>
 ];
 
 const kindOptions: EntityKind[] = ["animal", "plant", "resource", "oddity", "human"];
+const MAX_DRAWN_ENTITIES = 100;
 
 export function App() {
   const [template, setTemplate] = useState<TerrainTemplate>("island");
@@ -383,9 +384,13 @@ function drawTerrarium(
   drawWeatherTint(ctx, width, height, world);
   drawMapAnnotations(ctx, width, height, world);
 
-  world.entities
-    .filter((entity) => entity.alive)
-    .forEach((entity) => {
+  const visibleEntities = livingEntities(world).slice(0, MAX_DRAWN_ENTITIES);
+  if (selectedId && !visibleEntities.some((entity) => entity.id === selectedId)) {
+    const selected = world.entities.find((entity) => entity.id === selectedId && entity.alive);
+    if (selected) visibleEntities.push(selected);
+  }
+
+  visibleEntities.forEach((entity) => {
       const species = getSpecies(world, entity.speciesId);
       if (!species) return;
       const x = entity.x * scaleX;
