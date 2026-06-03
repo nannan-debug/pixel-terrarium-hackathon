@@ -1,0 +1,552 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+
+:root {
+  color-scheme: dark;
+  font-family: "IBM Plex Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #101713;
+  color: #f4efd8;
+  --ink: #f4efd8;
+  --muted: #b9c0ad;
+  --line: rgba(244, 239, 216, 0.18);
+  --panel: rgba(25, 35, 29, 0.86);
+  --panel-strong: rgba(34, 48, 39, 0.96);
+  --leaf: #72be6a;
+  --gold: #f0bd5a;
+  --water: #62b7d7;
+  --ember: #e85d43;
+  --rose: #d879a4;
+  --violet: #9d8ce2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 12% 10%, rgba(98, 183, 215, 0.28), transparent 28%),
+    radial-gradient(circle at 78% 0%, rgba(232, 93, 67, 0.16), transparent 25%),
+    #101713;
+  background-size:
+    18px 18px,
+    18px 18px,
+    auto,
+    auto,
+    auto;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 390px;
+  gap: 18px;
+  min-height: 100vh;
+  padding: 18px;
+}
+
+.stage {
+  display: grid;
+  grid-template-rows: auto minmax(320px, 1fr) auto auto;
+  gap: 14px;
+  min-width: 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 82px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+h1 {
+  font-family: "Fraunces", "Songti SC", serif;
+  font-size: clamp(42px, 7vw, 98px);
+  line-height: 0.9;
+  font-weight: 900;
+}
+
+h2 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.year-badge,
+.icon-button,
+.file-pick,
+.drop-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.year-badge {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  background: rgba(244, 239, 216, 0.08);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.terrarium-frame {
+  position: relative;
+  min-height: 360px;
+  border: 1px solid rgba(244, 239, 216, 0.28);
+  background: #1b251e;
+  box-shadow:
+    inset 0 0 0 10px rgba(255, 255, 255, 0.06),
+    0 26px 70px rgba(0, 0, 0, 0.36);
+}
+
+.terrarium-frame canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  max-height: calc(100vh - 260px);
+  cursor: crosshair;
+  image-rendering: pixelated;
+}
+
+.glass-label {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #172118;
+  font-size: 13px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.glass-label span {
+  padding: 6px 10px;
+  background: rgba(244, 239, 216, 0.78);
+}
+
+.controls-row,
+.terrain-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.icon-button,
+.terrain-card,
+.file-pick,
+.drop-button,
+.segmented button,
+.event-list button {
+  color: var(--ink);
+  border: 1px solid var(--line);
+  background: rgba(244, 239, 216, 0.07);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.icon-button {
+  min-height: 44px;
+  padding: 0 14px;
+  font-weight: 700;
+}
+
+.icon-button:hover,
+.terrain-card:hover,
+.file-pick:hover,
+.drop-button:hover,
+.segmented button:hover,
+.event-list button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(240, 189, 90, 0.7);
+  background: rgba(244, 239, 216, 0.13);
+}
+
+.icon-button.primary {
+  color: #102014;
+  background: var(--gold);
+}
+
+.icon-button.danger {
+  color: #ffe2d8;
+  border-color: rgba(232, 93, 67, 0.5);
+}
+
+.icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+  transform: none;
+}
+
+.terrain-card {
+  display: grid;
+  grid-template-columns: 34px minmax(64px, 1fr);
+  align-items: center;
+  min-width: 170px;
+  min-height: 74px;
+  padding: 10px;
+  text-align: left;
+}
+
+.terrain-card.active {
+  border-color: var(--leaf);
+  background: rgba(114, 190, 106, 0.18);
+}
+
+.terrain-icon {
+  grid-row: span 2;
+  color: var(--gold);
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.terrain-card span:not(.terrain-icon) {
+  font-weight: 800;
+}
+
+.terrain-card small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.panel-section {
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  backdrop-filter: blur(16px);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.section-title svg {
+  color: var(--gold);
+}
+
+.import-panel {
+  background:
+    linear-gradient(135deg, rgba(114, 190, 106, 0.15), transparent 34%),
+    var(--panel-strong);
+}
+
+.import-preview {
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.import-preview img,
+.import-preview > div {
+  width: 78px;
+  height: 78px;
+  border: 1px solid rgba(244, 239, 216, 0.26);
+  background: #111;
+  image-rendering: pixelated;
+  object-fit: cover;
+}
+
+.import-preview span {
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.file-pick,
+.drop-button {
+  width: 100%;
+  min-height: 42px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.file-pick input {
+  display: none;
+}
+
+.name-input {
+  width: 100%;
+  min-height: 40px;
+  margin: 10px 0;
+  padding: 0 10px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  outline: 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.segmented button {
+  min-height: 36px;
+  padding: 0 4px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.segmented button.active {
+  color: #102014;
+  background: var(--leaf);
+}
+
+.drop-button {
+  color: #102014;
+  background: #f4efd8;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.metric {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px;
+  background: rgba(244, 239, 216, 0.07);
+}
+
+.metric svg {
+  color: var(--water);
+}
+
+.metric span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.metric strong {
+  font-size: 20px;
+}
+
+.report-card,
+.bio-card {
+  border: 1px solid rgba(244, 239, 216, 0.14);
+  background: rgba(244, 239, 216, 0.06);
+}
+
+.report-card {
+  padding: 12px;
+}
+
+.report-card strong {
+  color: var(--gold);
+}
+
+.report-card p,
+.empty-copy,
+.dominant {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-cloud span {
+  padding: 5px 7px;
+  color: #101713;
+  background: var(--gold);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.bio-card {
+  padding: 12px;
+}
+
+.bio-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.life-dot {
+  width: 14px;
+  height: 14px;
+  background: var(--ember);
+}
+
+.life-dot.alive {
+  background: var(--leaf);
+  box-shadow: 0 0 18px rgba(114, 190, 106, 0.8);
+}
+
+.bio-head p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.bio-events {
+  display: grid;
+  gap: 8px;
+}
+
+.bio-events div,
+.event-list button {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+.bio-events span,
+.event-list span {
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.bio-events p,
+.event-list p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.event-list {
+  display: grid;
+  gap: 7px;
+}
+
+.event-list button {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px;
+  text-align: left;
+}
+
+.climate-bars {
+  display: grid;
+  gap: 10px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar-row span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.bar-row div {
+  height: 12px;
+  border: 1px solid rgba(244, 239, 216, 0.16);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.bar-row i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--water), var(--leaf), var(--gold));
+}
+
+@media (max-width: 1050px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .control-panel {
+    max-height: none;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 10px;
+  }
+
+  .topbar {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  h1 {
+    font-size: 52px;
+  }
+
+  .terrarium-frame canvas {
+    min-height: 300px;
+  }
+
+  .control-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .terrain-card {
+    flex: 1 1 150px;
+  }
+
+  .segmented {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
